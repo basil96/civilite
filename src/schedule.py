@@ -7,7 +7,7 @@ import sys
 import calendar
 from datetime import date, time, timedelta
 # 3rd party
-from astral import LocationInfo, SunDirection
+from astral import Observer, SunDirection
 from astral.sun import twilight
 from pytz import timezone
 
@@ -39,17 +39,17 @@ EVT_NEVER_ON = 3
 EVENT_TYPES = {EVT_FIXED: 'FIXED', EVT_SUNSET: 'SUNSET', EVT_NEVER_ON: 'NEVER-ON'}
 
 
-def get_civil_twilight(city, event_date):
+def get_civil_twilight(observer, event_date, observer_timezone):
     ''' wrapper function for twilight sunset start'''
-    twilight_start_end = twilight(city.observer, event_date, SunDirection.SETTING, timezone(city.timezone))
+    twilight_start_end = twilight(observer, event_date, SunDirection.SETTING, observer_timezone)
     return twilight_start_end[0]
 
-def getEventType(schedule, event_date, city):
+def getEventType(schedule, event_date, observer, observer_timezone):
     event = schedule.events.get(event_date.weekday())
     if event is None:
         return None
     result = EVT_SUNSET
-    sunset_time = get_civil_twilight(city, event_date).time()
+    sunset_time = get_civil_twilight(observer, event_date,observer_timezone).time()
     if event.start > sunset_time:
         result = EVT_FIXED
     elif sunset_time > event.stop:
@@ -58,20 +58,20 @@ def getEventType(schedule, event_date, city):
 
 
 def createEvents(year, schedule):
-    #my_astral.solar_depression = 'civil'
-    # city = a['Buffalo']     # close enuff, about 5 minutes behind ROC in sunset times
-    # city = a['Rochester']     # custom addition: Rochester,USA,43°10'N,77°36'W,US/Eastern,153
-    city = LocationInfo('Rochester_HoP', region='USA', timezone='US/Eastern', latitude=43.1606355, longitude=-77.3883843) # custom addition: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
+    '''create events from a schedule object at a custom location'''
+    # custom observer: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
+    observer_location = Observer(latitude=43.1606355, longitude=-77.3883843, elevation=170)
+    tz = timezone('US/Eastern')
     data = {}
     calDate = date(year, 1, 1)
     eventTypeChanged = False
     while calDate.year == year:
-        thisEventType = getEventType(schedule, calDate, city)
+        thisEventType = getEventType(schedule, calDate, observer_location, tz)
         if thisEventType is not None:
-            lastWeekEventType = getEventType(schedule, calDate - timedelta(days=7), city)
+            lastWeekEventType = getEventType(schedule, calDate - timedelta(days=7), observer_location, tz)
             if thisEventType != lastWeekEventType:
                 eventTypeChanged = True
-        data[calDate] = (get_civil_twilight(city, calDate), thisEventType, eventTypeChanged)
+        data[calDate] = (get_civil_twilight(observer_location, calDate, tz), thisEventType, eventTypeChanged)
         calDate += timedelta(days=1)
         eventTypeChanged = False
 
