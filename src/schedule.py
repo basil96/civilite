@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
-# Scheduling module for civilite
+''' Scheduling module for civilite '''
+__version__ = '1.0.1'
 
+# builtins
 import sys
 import calendar
-from astral import Astral
 from datetime import date, time, timedelta
-
+# 3rd party
+from astral import LocationInfo, SunDirection
+from astral.sun import twilight
+from pytz import timezone
 
 class ScheduleEvent:
     def __init__(self, start=None, stop=None):
@@ -35,26 +39,29 @@ EVT_NEVER_ON = 3
 EVENT_TYPES = {EVT_FIXED: 'FIXED', EVT_SUNSET: 'SUNSET', EVT_NEVER_ON: 'NEVER-ON'}
 
 
-def getEventType(schedule, date, city):
-    event = schedule.events.get(date.weekday())
+def get_civil_twilight(city, event_date):
+    ''' wrapper function for twilight sunset start'''
+    twilight_start_end = twilight(city.observer, event_date, SunDirection.SETTING, timezone(city.timezone))
+    return twilight_start_end[0]
+
+def getEventType(schedule, event_date, city):
+    event = schedule.events.get(event_date.weekday())
     if event is None:
         return None
     result = EVT_SUNSET
-    sunsetTime = city.sunset(date).time()
-    if event.start > sunsetTime:
+    sunset_time = get_civil_twilight(city, event_date).time()
+    if event.start > sunset_time:
         result = EVT_FIXED
-    elif sunsetTime > event.stop:
+    elif sunset_time > event.stop:
         result = EVT_NEVER_ON
     return result
 
 
 def createEvents(year, schedule):
-    a = Astral()
-    a.solar_depression = 'civil'
+    #my_astral.solar_depression = 'civil'
     # city = a['Buffalo']     # close enuff, about 5 minutes behind ROC in sunset times
     # city = a['Rochester']     # custom addition: Rochester,USA,43°10'N,77°36'W,US/Eastern,153
-    city = a['Rochester_HoP']     # custom addition: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
-
+    city = LocationInfo('Rochester_HoP', region='USA', timezone='US/Eastern', latitude=43.1606355, longitude=-77.3883843) # custom addition: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
     data = {}
     calDate = date(year, 1, 1)
     eventTypeChanged = False
@@ -64,7 +71,7 @@ def createEvents(year, schedule):
             lastWeekEventType = getEventType(schedule, calDate - timedelta(days=7), city)
             if thisEventType != lastWeekEventType:
                 eventTypeChanged = True
-        data[calDate] = (city.sunset(calDate), thisEventType, eventTypeChanged)
+        data[calDate] = (get_civil_twilight(city, calDate), thisEventType, eventTypeChanged)
         calDate += timedelta(days=1)
         eventTypeChanged = False
 
@@ -72,7 +79,7 @@ def createEvents(year, schedule):
         fpOut.write('"Weekday","Date","Sunset","Event Type","Event Change?"\n')
         for d, (s, e, evtChanged) in sorted(data.items()):
             fpOut.write('"%s",%s,%s,"%s",%s\n' % (calendar.day_abbr[d.weekday()], d,
-                                                  s.time(), EVENT_TYPES.get(e, ''), '*' if evtChanged else ''))
+                                                  (s.strftime('%H:%M:%S')), EVENT_TYPES.get(e, ''), '*' if evtChanged else ''))
 
     return data
 
@@ -91,7 +98,6 @@ def outputSunsets(year):
     mySchedule = getCurrentSchedule()
     print('Occupancy schedule:')
     print(mySchedule)
-    print
     # run it
     createEvents(yr, mySchedule)
 
