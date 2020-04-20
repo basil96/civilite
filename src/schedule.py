@@ -78,6 +78,7 @@ def createEvents(year, schedule):
 
 
 def getCurrentSchedule():
+    '''Current HoP weekly schedule'''
     result = WeeklySchedule()
     result.AddEvent(calendar.SUNDAY, ScheduleEvent(time(16, 45), time(19, 0)))
     result.AddEvent(calendar.TUESDAY, ScheduleEvent(time(18, 30), time(22, 0)))
@@ -87,17 +88,19 @@ def getCurrentSchedule():
 
 
 def outputSunsets(year):
-    # Lot lighting schedule
+    '''output the schedule and then create astrological events as necessary
+    for safe lighting
+    '''
+    # Get Lot lighting schedule
     mySchedule = getCurrentSchedule()
     print('Occupancy schedule:')
     print(mySchedule)
-    print
     # run it
-    createEvents(yr, mySchedule)
+    createEvents(year, mySchedule)
 
 
 if __name__ == '__main__':
-    yr = date.today().year
+    YEAR = date.today().year
     if len(sys.argv) == 2:
-        yr = int(sys.argv[1])
-    outputSunsets(yr)
+        YEAR = int(sys.argv[1])
+    outputSunsets(YEAR)
