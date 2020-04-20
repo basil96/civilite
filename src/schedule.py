@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# Scheduling module for civilite
+''' Scheduling module for civilite '''
+__version__ = '1.0.1'
 
 import sys
 import calendar
@@ -39,7 +40,7 @@ EVENT_TYPES = {EVT_FIXED: 'FIXED', EVT_SUNSET: 'SUNSET', EVT_NEVER_ON: 'NEVER-ON
 class ScheduleObserver(Observer):
     '''schedule implementation of astral.Observer to aggregate timezone'''
     tzinfo: pytz.tzinfo = pytz.utc
-    def __init__(self, tzinfo = pytz.utc, **kwargs):
+    def __init__(self, tzinfo=pytz.utc, **kwargs):
         self.tzinfo = tzinfo
         super().__init__(**kwargs)
     def get_civil_twilight(self, event_date):
