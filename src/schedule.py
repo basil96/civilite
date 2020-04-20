@@ -9,7 +9,7 @@ from datetime import date, time, timedelta
 # 3rd party
 from astral import Observer, SunDirection
 from astral.sun import twilight
-from pytz import timezone
+import pytz
 
 class ScheduleEvent:
     def __init__(self, start=None, stop=None):
@@ -38,18 +38,23 @@ EVT_SUNSET = 2
 EVT_NEVER_ON = 3
 EVENT_TYPES = {EVT_FIXED: 'FIXED', EVT_SUNSET: 'SUNSET', EVT_NEVER_ON: 'NEVER-ON'}
 
+class ScheduleObserver(Observer):
+    '''schedule implementation of astral.Observer to aggregate timezone'''
+    timezone: str = "UTC"
+    def __init__(self, timezone="UTC", **kwargs):
+        self.timezone = timezone
+        super().__init__(**kwargs)
+    def get_civil_twilight(self, event_date):
+        ''' wrapper function for twilight sunset start'''
+        twilight_start_end = twilight(self, event_date, SunDirection.SETTING, pytz.timezone(self.timezone))
+        return twilight_start_end[0]
 
-def get_civil_twilight(observer, event_date, observer_timezone):
-    ''' wrapper function for twilight sunset start'''
-    twilight_start_end = twilight(observer, event_date, SunDirection.SETTING, observer_timezone)
-    return twilight_start_end[0]
-
-def getEventType(schedule, event_date, observer, observer_timezone):
+def getEventType(schedule, event_date, observer):
     event = schedule.events.get(event_date.weekday())
     if event is None:
         return None
     result = EVT_SUNSET
-    sunset_time = get_civil_twilight(observer, event_date,observer_timezone).time()
+    sunset_time = observer.get_civil_twilight(event_date).time()
     if event.start > sunset_time:
         result = EVT_FIXED
     elif sunset_time > event.stop:
@@ -60,18 +65,17 @@ def getEventType(schedule, event_date, observer, observer_timezone):
 def createEvents(year, schedule):
     '''create events from a schedule object at a custom location'''
     # custom observer: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
-    observer_location = Observer(latitude=43.1606355, longitude=-77.3883843, elevation=170)
-    tz = timezone('US/Eastern')
+    observer = ScheduleObserver(latitude=43.1606355, longitude=-77.3883843, elevation=170, timezone="US/Eastern")
     data = {}
     calDate = date(year, 1, 1)
     eventTypeChanged = False
     while calDate.year == year:
-        thisEventType = getEventType(schedule, calDate, observer_location, tz)
+        thisEventType = getEventType(schedule, calDate, observer)
         if thisEventType is not None:
-            lastWeekEventType = getEventType(schedule, calDate - timedelta(days=7), observer_location, tz)
+            lastWeekEventType = getEventType(schedule, calDate - timedelta(days=7), observer)
             if thisEventType != lastWeekEventType:
                 eventTypeChanged = True
-        data[calDate] = (get_civil_twilight(observer_location, calDate, tz), thisEventType, eventTypeChanged)
+        data[calDate] = (observer.get_civil_twilight(calDate), thisEventType, eventTypeChanged)
         calDate += timedelta(days=1)
         eventTypeChanged = False
 
