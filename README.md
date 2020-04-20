@@ -16,5 +16,4 @@ When a building is occupied on a given schedule for an event, outdoor lighting f
 
 ## External Dependencies
 
-* [astral](https://pypi.org/project/astral/) - for calculation of location-based sunset/sunrise
-* [reportlab](https://pypi.org/project/reportlab/) - for generation of PDF documents
+* See **requirements.txt**
