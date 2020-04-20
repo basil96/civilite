@@ -3,7 +3,6 @@
 
 import sys
 import calendar
-from astral import Astral
 from datetime import date, time, timedelta
 # 3rd party
 from astral import Observer, SunDirection
@@ -57,7 +56,7 @@ def getEventType(schedule, event_date, observer):
     sunset_time = observer.get_civil_twilight(event_date).time()
     if event.start > sunset_time:
         result = EVT_FIXED
-    elif sunsetTime > event.stop:
+    elif sunset_time > event.stop:
         result = EVT_NEVER_ON
     return result
 
@@ -83,7 +82,7 @@ def createEvents(year, schedule):
         fpOut.write('"Weekday","Date","Sunset","Event Type","Event Change?"\n')
         for d, (s, e, evtChanged) in sorted(data.items()):
             fpOut.write('"%s",%s,%s,"%s",%s\n' % (calendar.day_abbr[d.weekday()], d,
-                                                  s.time(), EVENT_TYPES.get(e, ''), '*' if evtChanged else ''))
+                                                  s.strftime('%H:%M:%S'), EVENT_TYPES.get(e, ''), '*' if evtChanged else ''))
 
     return data
 
