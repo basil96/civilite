@@ -40,13 +40,13 @@ EVENT_TYPES = {EVT_FIXED: 'FIXED', EVT_SUNSET: 'SUNSET', EVT_NEVER_ON: 'NEVER-ON
 
 class ScheduleObserver(Observer):
     '''schedule implementation of astral.Observer to aggregate timezone'''
-    timezone: str = "UTC"
-    def __init__(self, timezone="UTC", **kwargs):
-        self.timezone = timezone
+    tzinfo: pytz.tzinfo = pytz.utc
+    def __init__(self, tzinfo = pytz.utc, **kwargs):
+        self.tzinfo = tzinfo
         super().__init__(**kwargs)
     def get_civil_twilight(self, event_date):
         ''' wrapper function for twilight sunset start'''
-        twilight_start_end = twilight(self, event_date, SunDirection.SETTING, pytz.timezone(self.timezone))
+        twilight_start_end = twilight(self, event_date, SunDirection.SETTING, self.tzinfo)
         return twilight_start_end[0]
 
 def getEventType(schedule, event_date, observer):
@@ -65,7 +65,7 @@ def getEventType(schedule, event_date, observer):
 def createEvents(year, schedule):
     '''create events from a schedule object at a custom location'''
     # custom observer: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
-    observer = ScheduleObserver(latitude=43.1606355, longitude=-77.3883843, elevation=170, timezone="US/Eastern")
+    observer = ScheduleObserver(latitude=43.1606355, longitude=-77.3883843, elevation=170, tzinfo=pytz.timezone("US/Eastern"))
     data = {}
     calDate = date(year, 1, 1)
     eventTypeChanged = False
