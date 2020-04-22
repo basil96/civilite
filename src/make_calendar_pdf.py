@@ -13,32 +13,33 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 # custom
-from schedule import  createEvents, getCurrentSchedule, EVENT_TYPES, EVT_FIXED, EVT_SUNSET, EVT_NEVER_ON
+from schedule import (createEvents, getCurrentSchedule, EVENT_TYPES,
+                      EVT_FIXED, EVT_SUNSET, EVT_NEVER_ON)
 
 THIS_YEAR = date.today().year
 if len(sys.argv) > 1:
     THIS_YEAR = int(sys.argv[1])
 
 
-def OnFirstPage(canvas, _doc):
+def onFirstPage(canvas, _doc):
     ''' function object for setting up the default document
         this implementation does not use the doc parameter
     '''
     canvas.saveState()
-    canvas.setTitle('House of Prayer - {} Parking Lot Lighting Schedule'.format(THIS_YEAR))
+    canvas.setTitle(f'House of Prayer - {THIS_YEAR} Parking Lot Lighting Schedule')
     canvas.setAuthor('AMV')
-    canvas.setSubject('HoP parking lot lighting schedule for {}'.format(THIS_YEAR))
+    canvas.setSubject(f'HoP parking lot lighting schedule for {THIS_YEAR}')
     canvas.setKeywords('')
     canvas.restoreState()
 
 
-print('Creating the lighting control schedule for year {}'.format(THIS_YEAR))
+print(f'Creating the lighting control schedule for year {THIS_YEAR}')
 # Occupancy schedule for parking lot lighting
 MY_SCHEDULE = getCurrentSchedule()
 SUNSET_EVENTS = createEvents(THIS_YEAR, MY_SCHEDULE)
 
 print('Creating template..')
-CALENDAR_FILE_NAME = 'lighting_calendar_{}.pdf'.format(THIS_YEAR)
+CALENDAR_FILE_NAME = f'lighting_calendar_{THIS_YEAR}.pdf'
 CALENDAR_DOCUMENT = SimpleDocTemplate(CALENDAR_FILE_NAME,
                                       pagesize=letter,
                                       leftMargin=0.2*inch,
@@ -53,7 +54,9 @@ DOC_COLOR_GRAY_1 = colors.HexColor('#777777')
 DOC_COLOR_GRAY_2 = colors.HexColor('#969696')
 DOC_COLOR_GRAY_3 = colors.HexColor('#AF9E93')
 # cGray3 = colors.HexColor('#677077')
-EVENT_COLORS = {EVT_FIXED: DOC_COLOR_GREEN, EVT_SUNSET: DOC_COLOR_ORANGE, EVT_NEVER_ON: DOC_COLOR_GRAY_3}
+EVENT_COLORS = {EVT_FIXED: DOC_COLOR_GREEN,
+                EVT_SUNSET: DOC_COLOR_ORANGE,
+                EVT_NEVER_ON: DOC_COLOR_GRAY_3}
 CALENDAR_STYLE = [
     # global
     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),   # all cells
@@ -87,22 +90,27 @@ while CELL_DATE.year == START_DATE.year:
         if CELL_DATE.day == 1:
             ROW[0] = calendar.month_name[CELL_DATE.month]
             CALENDAR_STYLE.append(('BACKGROUND', (0, ROW_INDEX), (0, ROW_INDEX), DOC_COLOR_BLUE))
-            CALENDAR_STYLE.append(('BOX', (COLUMN_INDEX, ROW_INDEX), (COLUMN_INDEX, ROW_INDEX), 1, DOC_COLOR_GRAY_2))
+            CALENDAR_STYLE.append(('BOX', (COLUMN_INDEX, ROW_INDEX),
+                                   (COLUMN_INDEX, ROW_INDEX), 1, DOC_COLOR_GRAY_2))
         if info is not None:
             sunsetTime, eventType, eventChanged = info
             if eventType is not None:
-                CALENDAR_STYLE.append(('BACKGROUND', (COLUMN_INDEX, ROW_INDEX), (COLUMN_INDEX, ROW_INDEX), EVENT_COLORS[eventType]))
+                CALENDAR_STYLE.append(('BACKGROUND', (COLUMN_INDEX, ROW_INDEX),
+                                       (COLUMN_INDEX, ROW_INDEX), EVENT_COLORS[eventType]))
             else:
-                CALENDAR_STYLE.append(('TEXTCOLOR', (COLUMN_INDEX, ROW_INDEX), (COLUMN_INDEX, ROW_INDEX), colors.lightslategray))
+                CALENDAR_STYLE.append(('TEXTCOLOR', (COLUMN_INDEX, ROW_INDEX),
+                                       (COLUMN_INDEX, ROW_INDEX), colors.lightslategray))
         CURRENT_TIME = sunsetTime
         if LAST_TIME is not None and (CURRENT_TIME.utcoffset() != LAST_TIME.utcoffset()):
-            CALENDAR_STYLE.append(('BACKGROUND', (COLUMN_INDEX, ROW_INDEX), (COLUMN_INDEX, ROW_INDEX), colors.yellow))
+            CALENDAR_STYLE.append(('BACKGROUND', (COLUMN_INDEX, ROW_INDEX),
+                                   (COLUMN_INDEX, ROW_INDEX), colors.yellow))
         LAST_TIME = CURRENT_TIME
         COLUMN_INDEX += 1
         CELL_DATE += timedelta(days=1)
     ROW.append(CURRENT_TIME.time().strftime('%H:%M'))
     DATA.append(ROW)
     ROW_INDEX += 1
+NUM_ROWS = len(DATA)
 
 # sunset column formats
 CALENDAR_STYLE.append(('LINEAFTER', (7, 0), (7, -1), 1, colors.black))
@@ -121,8 +129,10 @@ for i in range(7):
     weekDay = (i - 1) % 7   # list Sunday first, just like in calendar table
     evt = MY_SCHEDULE.events.get(weekDay)
     if evt is not None:
-        SCHEDULE_DATA.append(['', calendar.day_name[weekDay], time.strftime(evt.start, '%H:%M'), time.strftime(evt.stop, '%H:%M')])
-SCHEDULE_DATA = SCHEDULE_DATA + (TABLE_1._nrows-len(SCHEDULE_DATA)-ROW_ADJUST)*[['', '', '', '']]
+        SCHEDULE_DATA.append(['', calendar.day_name[weekDay],
+                              time.strftime(evt.start, '%H:%M'),
+                              time.strftime(evt.stop, '%H:%M')])
+SCHEDULE_DATA = SCHEDULE_DATA + (NUM_ROWS-len(SCHEDULE_DATA)-ROW_ADJUST)*[['', '', '', '']]
 SCHEDULE_DATA[12] = ['LEGEND', '']
 SCHEDULE_DATA[13] = ['01', '%s event' % EVENT_TYPES[EVT_SUNSET]]
 SCHEDULE_DATA[14] = ['01', '%s event' % EVENT_TYPES[EVT_FIXED]]
@@ -132,7 +142,7 @@ SCHEDULE_DATA[17] = ['01', 'DST change']
 TABLE_2 = Table(SCHEDULE_DATA,
                 [0.25*inch, 0.95*inch, 0.75*inch, 0.75*inch],
                 [1.0*inch, 1.0*inch, 0.50*inch] +
-                (TABLE_1._nrows-3-ROW_ADJUST)*[0.25*inch],
+                (NUM_ROWS-3-ROW_ADJUST)*[0.25*inch],
                 TableStyle([
                     # global
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -162,5 +172,5 @@ TABLE_MAIN = Table([[TABLE_2, TABLE_1]])
 
 DOCUMENT_ELEMENTS.append(TABLE_MAIN)
 # write the document to disk
-CALENDAR_DOCUMENT.build(DOCUMENT_ELEMENTS, onFirstPage=OnFirstPage)
-print('Calendar {} created.'.format(CALENDAR_FILE_NAME))
+CALENDAR_DOCUMENT.build(DOCUMENT_ELEMENTS, onFirstPage=onFirstPage)
+print(f'Calendar {CALENDAR_FILE_NAME} created.')
