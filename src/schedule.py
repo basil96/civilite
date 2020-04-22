@@ -67,7 +67,6 @@ class WeeklySchedule:
 
 class ScheduleObserver(Observer):
     '''Schedule implementation of astral.Observer to aggregate timezone'''
-    tzinfo: pytz.tzinfo = pytz.utc
 
     def __init__(self, tzinfo: pytz.tzinfo = pytz.utc, **kwargs) -> None:
         '''Create an observer in a given time zone.'''
