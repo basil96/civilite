@@ -13,8 +13,8 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 # custom
-from schedule import (createEvents, getCurrentSchedule, EVENT_TYPES,
-                      EVT_FIXED, EVT_SUNSET, EVT_NEVER_ON)
+from civilite.schedule import (createEvents, getCurrentSchedule, EVENT_TYPES,
+                               EVT_FIXED, EVT_SUNSET, EVT_NEVER_ON)
 
 THIS_YEAR = date.today().year
 if len(sys.argv) > 1:
