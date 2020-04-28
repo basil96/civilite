@@ -134,3 +134,4 @@ dmypy.json
 #project default output files
 sunsets_*.csv
 lighting_calendar_*.pdf
+tests/astro_cache.json
