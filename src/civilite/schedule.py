@@ -3,15 +3,15 @@
 __version__ = '1.0.1'
 
 # Builtins
-import sys
 import calendar
-from datetime import date, time, datetime, timedelta
-from typing import Dict, Tuple, Optional
+import sys
+from datetime import date, datetime, time, timedelta
+from typing import Dict, Optional, Tuple
+
 # 3rd party
+import pytz
 from astral import Observer, SunDirection
 from astral.sun import twilight
-import pytz
-
 
 # Event definitions for describing tasks on the Intermatic astro time clock
 # Assumptions:

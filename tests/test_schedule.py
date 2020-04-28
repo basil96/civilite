@@ -5,12 +5,12 @@
 import calendar
 import json
 import os
-import pytz
 import re
 import time
 from datetime import date, datetime, timedelta
 
 # 3rd party
+import pytz
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from requests import request

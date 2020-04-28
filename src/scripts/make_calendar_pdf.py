@@ -6,15 +6,17 @@ __version__ = '1.0.1'
 
 # builtins
 import calendar
-from datetime import date, time, timedelta
 import sys
+from datetime import date, time, timedelta
+
 # 3rd party
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, inch
+from reportlab.lib.pagesizes import inch, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+
 # custom
-from civilite.schedule import (createEvents, getCurrentSchedule, EVENT_TYPES,
-                               EVT_FIXED, EVT_SUNSET, EVT_NEVER_ON)
+from civilite.schedule import (EVENT_TYPES, EVT_FIXED, EVT_NEVER_ON,
+                               EVT_SUNSET, createEvents, getCurrentSchedule)
 
 THIS_YEAR = date.today().year
 if len(sys.argv) > 1:
