@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ''' Scheduling module for civilite '''
-__version__ = '1.0.1'
+ 
 
 # Builtins
 import calendar
@@ -12,6 +12,10 @@ from typing import Dict, Optional, Tuple
 import pytz
 from astral import Observer, SunDirection
 from astral.sun import twilight
+#self
+import civilite._meta as meta
+
+__version__ = meta.__version__
 
 # Event definitions for describing tasks on the Intermatic astro time clock
 # Assumptions:
