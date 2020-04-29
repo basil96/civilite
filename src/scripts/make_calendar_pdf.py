@@ -2,7 +2,6 @@
 ''' Client for creating a nicely formatted PDF calendar for a
     specified year or the current year (default).
 '''
-__version__ = '1.0.1'
 
 # builtins
 import calendar
@@ -15,8 +14,11 @@ from reportlab.lib.pagesizes import inch, letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 # custom
+import civilite._meta as meta
 from civilite.schedule import (EVENT_TYPES, EVT_FIXED, EVT_NEVER_ON,
                                EVT_SUNSET, createEvents, getCurrentSchedule)
+
+__version__ = meta.__version__
 
 THIS_YEAR = date.today().year
 if len(sys.argv) > 1:
