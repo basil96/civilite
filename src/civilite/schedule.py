@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 ''' Scheduling module for civilite '''
- 
 
 # Builtins
 import calendar
@@ -12,7 +11,8 @@ from typing import Dict, Optional, Tuple
 import pytz
 from astral import Observer, SunDirection
 from astral.sun import twilight
-#self
+
+# self
 import civilite._meta as meta
 
 __version__ = meta.__version__
@@ -100,12 +100,13 @@ def getEventType(schedule: WeeklySchedule, event_date: date, observer: Observer)
     return result
 
 
-def createEvents(year: int, schedule: WeeklySchedule) -> Dict[date, Tuple[datetime, int, bool]]:
+def createEvents(year: int, schedule: WeeklySchedule,
+                 create_output: bool = False) -> Dict[date, Tuple[datetime, int, bool]]:
     '''Create events from a Schedule object at a custom location for the entire given year.
 
-    Outputs the schedule to a CSV file.
+    If create_output is True, output the schedule to a CSV file.
 
-    Returns:
+    Return:
         A dictionary defined as follows:
             keys: dates of the year
             values: tuple of (sunset datetime, event type, "event type changed" flag)
@@ -133,18 +134,21 @@ def createEvents(year: int, schedule: WeeklySchedule) -> Dict[date, Tuple[dateti
                                event_type_changed)
         calendar_date += timedelta(days=1)
         event_type_changed = False
-    csv_name = f'sunsets_{year}.csv'
-    with open(csv_name, 'w') as out_file:
-        out_file.write('"Weekday","Date","Sunset","Event Type","Event Change?"\n')
-        for evt_date, (sunset_time, evt_type, evt_changed) in sorted(data.items()):
-            out_file.write(
-                f'"{calendar.day_abbr[evt_date.weekday()]}",'
-                f'{evt_date},'
-                f'{sunset_time.strftime("%H:%M:%S")},'
-                f'"{EVENT_TYPES.get(evt_type, "")}",'
-                f'{"*" if evt_changed else ""}\n'
-            )
-    print(f'Schedule {csv_name} created.')
+
+    if create_output:
+        csv_name = f'sunsets_{year}.csv'
+        with open(csv_name, 'w') as out_file:
+            out_file.write('"Weekday","Date","Sunset","Event Type","Event Change?"\n')
+            for evt_date, (sunset_time, evt_type, evt_changed) in sorted(data.items()):
+                out_file.write(
+                    f'"{calendar.day_abbr[evt_date.weekday()]}",'
+                    f'{evt_date},'
+                    f'{sunset_time.strftime("%H:%M:%S")},'
+                    f'"{EVENT_TYPES.get(evt_type, "")}",'
+                    f'{"*" if evt_changed else ""}\n'
+                )
+        print(f'Schedule {csv_name} created.')
+
     return data
 
 
@@ -166,7 +170,7 @@ def outputSunsets(year: int) -> None:
     print('Occupancy schedule:')
     print(hop_schedule)
     # Save it
-    createEvents(year, hop_schedule)
+    createEvents(year, hop_schedule, create_output=True)
 
 
 if __name__ == '__main__':
