@@ -76,7 +76,7 @@ class TestSchedule:
             json.dump(astro_cache, open(cache_filename, 'w'))
 
         curr_schedule = schedule.getCurrentSchedule()
-        curr_events = schedule.createEvents(test_year, curr_schedule)
+        curr_events = curr_schedule.createEvents(test_year)
         for evt_date, (sunset_time, *etc) in curr_events.items():
             expected_sunset = parse(astro_cache[evt_date.isoformat()][1])
             abs_sunset_diff = abs(sunset_time - expected_sunset)

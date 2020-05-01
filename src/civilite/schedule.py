@@ -50,11 +50,15 @@ class ScheduleEvent:
 class WeeklySchedule:
     '''A collection of events that repeat every week.'''
 
-    def __init__(self) -> None:
+    def __init__(self, observer: Observer) -> None:
+        # The Observer associated with this schedule.
+        self.observer = observer
+        # The collection of events that occur every week. Key: weekday (int), value: ScheduleEvent instance.
         self.events = {}
 
     def __str__(self) -> str:
-        result = [('Weekday', 'Start time', 'End time')]
+        result = [(f'Weekly schedule for {self.observer}',)]
+        result += [('Weekday', 'Start time', 'End time')]
         for weekday in range(7):
             if weekday in self.events:
                 result += [(
@@ -68,6 +72,69 @@ class WeeklySchedule:
         '''Add a new event to this schedule.'''
         self.events[weekday] = event
 
+    def getEventType(self, event_date: date) -> Optional[int]:
+        '''Return the type of event for manually programming an Intermatic astronomical time clock.
+        The event type primarily depends on whether a sunset occurs during the event.
+        '''
+        event = self.events.get(event_date.weekday())
+        if event is None:
+            return None
+        result = EVT_SUNSET
+        sunset_time = self.observer.getCivilTwilight(event_date).time()
+        if event.start > sunset_time:
+            result = EVT_FIXED
+        elif sunset_time > event.stop:
+            result = EVT_NEVER_ON
+        return result
+
+    def createEvents(self, year: int, create_output: bool = False) -> Dict[date, Tuple[datetime, int, bool]]:
+        '''Create events from a Schedule object at a custom location for the entire given year.
+        Args:
+            year (int):
+                The year for which to create the events.
+            create_output (bool):
+                If True, output the schedule to a CSV file.
+
+        Return:
+            A dictionary defined as follows:
+                keys: dates of the year
+                values: tuple of (sunset datetime, event type, "event type changed" flag)
+
+        The "event type changed" flag indicates that a change in the clock's
+        manual programming is needed for the event that week.
+        '''
+        data = {}
+        calendar_date = date(year, 1, 1)
+        event_type_changed = False
+        while calendar_date.year == year:
+            curr_event_type = self.getEventType(calendar_date)
+            if curr_event_type is not None:
+                prev_week_event_type = self.getEventType(
+                    calendar_date - timedelta(days=7))
+                if curr_event_type != prev_week_event_type:
+                    event_type_changed = True
+            data[calendar_date] = (self.observer.getCivilTwilight(calendar_date),
+                                   curr_event_type,
+                                   event_type_changed)
+            calendar_date += timedelta(days=1)
+            event_type_changed = False
+
+        if create_output:
+            csv_name = f'sunsets_{year}.csv'
+            with open(csv_name, 'w') as out_file:
+                out_file.write('"Weekday","Date","Sunset","Event Type","Event Change?"\n')
+                for evt_date, (sunset_time, evt_type, evt_changed) in sorted(data.items()):
+                    out_file.write(
+                        f'"{calendar.day_abbr[evt_date.weekday()]}",'
+                        f'{evt_date},'
+                        f'{sunset_time.strftime("%H:%M:%S")},'
+                        f'"{EVENT_TYPES.get(evt_type, "")}",'
+                        f'{"*" if evt_changed else ""}\n'
+                    )
+            print(f'Schedule {csv_name} created.')
+
+        return data
+
 
 class ScheduleObserver(Observer):
     '''Schedule implementation of astral.Observer to aggregate timezone'''
@@ -77,6 +144,17 @@ class ScheduleObserver(Observer):
         self.tzinfo = tzinfo
         super().__init__(**kwargs)
 
+    def __str__(self):
+        if isinstance(self.elevation, tuple):
+            elevation_str = (f'elevation {self.elevation[0]:.0f} m'
+                             f', {self.elevation[1]:.0f} m to nearest obscuring feature')
+        else:
+            elevation_str = f'elevation {self.elevation:.0f} m'
+        result = (f'ScheduleObserver at '
+                  f'({self.latitude},{self.longitude})'
+                  f', {elevation_str}')
+        return result
+
     def getCivilTwilight(self, event_date: date = None) -> datetime:
         '''Return the start of civil sunset on a given date.
         Defaults to today's date if not given.'''
@@ -84,77 +162,13 @@ class ScheduleObserver(Observer):
         return twilight_start_end[0]
 
 
-def getEventType(schedule: WeeklySchedule, event_date: date, observer: Observer) -> Optional[int]:
-    '''Return the type of event for manually programming an Intermatic astronomical time clock.
-    The event type primarily depends on whether a sunset occurs during the event.
-    '''
-    event = schedule.events.get(event_date.weekday())
-    if event is None:
-        return None
-    result = EVT_SUNSET
-    sunset_time = observer.getCivilTwilight(event_date).time()
-    if event.start > sunset_time:
-        result = EVT_FIXED
-    elif sunset_time > event.stop:
-        result = EVT_NEVER_ON
-    return result
-
-
-def createEvents(year: int, schedule: WeeklySchedule,
-                 create_output: bool = False) -> Dict[date, Tuple[datetime, int, bool]]:
-    '''Create events from a Schedule object at a custom location for the entire given year.
-
-    If create_output is True, output the schedule to a CSV file.
-
-    Return:
-        A dictionary defined as follows:
-            keys: dates of the year
-            values: tuple of (sunset datetime, event type, "event type changed" flag)
-
-    The "event type changed" flag indicates that a change in the clock's
-    manual programming is needed for the event that week.
-    '''
-    # Custom observer: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
-    # Note: elevation (in meters) is just a guess based on ROC airport. We may adjust it.
-    observer = ScheduleObserver(latitude=43.1606355, longitude=-77.3883843, elevation=170,
-                                tzinfo=pytz.timezone("US/Eastern"))
-    data = {}
-    calendar_date = date(year, 1, 1)
-    event_type_changed = False
-    while calendar_date.year == year:
-        curr_event_type = getEventType(schedule, calendar_date, observer)
-        if curr_event_type is not None:
-            prev_week_event_type = getEventType(schedule,
-                                                calendar_date - timedelta(days=7),
-                                                observer)
-            if curr_event_type != prev_week_event_type:
-                event_type_changed = True
-        data[calendar_date] = (observer.getCivilTwilight(calendar_date),
-                               curr_event_type,
-                               event_type_changed)
-        calendar_date += timedelta(days=1)
-        event_type_changed = False
-
-    if create_output:
-        csv_name = f'sunsets_{year}.csv'
-        with open(csv_name, 'w') as out_file:
-            out_file.write('"Weekday","Date","Sunset","Event Type","Event Change?"\n')
-            for evt_date, (sunset_time, evt_type, evt_changed) in sorted(data.items()):
-                out_file.write(
-                    f'"{calendar.day_abbr[evt_date.weekday()]}",'
-                    f'{evt_date},'
-                    f'{sunset_time.strftime("%H:%M:%S")},'
-                    f'"{EVENT_TYPES.get(evt_type, "")}",'
-                    f'{"*" if evt_changed else ""}\n'
-                )
-        print(f'Schedule {csv_name} created.')
-
-    return data
-
-
 def getCurrentSchedule() -> WeeklySchedule:
     '''Current HoP weekly schedule.'''
-    result = WeeklySchedule()
+    # Observer at HoP: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
+    # Note: elevation (in meters) is just a guess based on ROC airport. We may adjust it.
+    hop_observer = ScheduleObserver(latitude=43.1606355, longitude=-77.3883843, elevation=170,
+                                    tzinfo=pytz.timezone("US/Eastern"))
+    result = WeeklySchedule(hop_observer)
     result.addEvent(calendar.SUNDAY, ScheduleEvent(time(16, 45), time(19, 0)))
     result.addEvent(calendar.TUESDAY, ScheduleEvent(time(18, 30), time(22, 0)))
     result.addEvent(calendar.WEDNESDAY, ScheduleEvent(time(18, 45), time(21, 0)))
@@ -170,7 +184,7 @@ def outputSunsets(year: int) -> None:
     print('Occupancy schedule:')
     print(hop_schedule)
     # Save it
-    createEvents(year, hop_schedule, create_output=True)
+    hop_schedule.createEvents(year, create_output=True)
 
 
 if __name__ == '__main__':

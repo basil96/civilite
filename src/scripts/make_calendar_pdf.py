@@ -16,7 +16,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 # custom
 import civilite._meta as meta
 from civilite.schedule import (EVENT_TYPES, EVT_FIXED, EVT_NEVER_ON,
-                               EVT_SUNSET, createEvents, getCurrentSchedule)
+                               EVT_SUNSET, getCurrentSchedule)
 
 __version__ = meta.__version__
 
@@ -40,7 +40,7 @@ def onFirstPage(canvas, _doc):
 print(f'Creating the lighting control schedule for year {THIS_YEAR}')
 # Occupancy schedule for parking lot lighting
 MY_SCHEDULE = getCurrentSchedule()
-SUNSET_EVENTS = createEvents(THIS_YEAR, MY_SCHEDULE)
+SUNSET_EVENTS = MY_SCHEDULE.createEvents(THIS_YEAR)
 
 print('Creating template..')
 CALENDAR_FILE_NAME = f'lighting_calendar_{THIS_YEAR}.pdf'
