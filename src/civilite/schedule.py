@@ -5,7 +5,7 @@
 import calendar
 import sys
 from datetime import date, datetime, time, timedelta
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Type
 
 # 3rd party
 import pytz
@@ -50,7 +50,7 @@ class ScheduleEvent:
 class WeeklySchedule:
     '''A collection of events that repeat every week.'''
 
-    def __init__(self, observer: Observer) -> None:
+    def __init__(self, observer: Type[Observer]) -> None:
         # The Observer associated with this schedule.
         self.observer = observer
         # The collection of events that occur every week. Key: weekday (int), value: ScheduleEvent instance.
