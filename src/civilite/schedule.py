@@ -5,12 +5,13 @@
 import calendar
 import sys
 from datetime import date, datetime, time, timedelta
-from typing import Dict, Optional, Tuple, Type
+from typing import Dict, Optional, Tuple
 
 # 3rd party
 import pytz
 from astral import Observer, SunDirection
 from astral.sun import twilight
+from timezonefinder import TimezoneFinder
 
 # self
 import civilite._meta as meta
@@ -50,9 +51,15 @@ class ScheduleEvent:
 class WeeklySchedule:
     '''A collection of events that repeat every week.'''
 
-    def __init__(self, observer: Type[Observer]) -> None:
+    def __init__(self, observer: Observer, tzinfo: pytz.tzinfo = None) -> None:
         # The Observer associated with this schedule.
         self.observer = observer
+        if tzinfo is None:
+            # Use the timezone at the observer's location
+            tzf = TimezoneFinder()
+            self.tzinfo = pytz.timezone(tzf.timezone_at(
+                lat=observer.latitude, lng=observer.longitude))
+        self.tzinfo = tzinfo
         # The collection of events that occur every week. Key: weekday (int), value: ScheduleEvent instance.
         self.events = {}
 
@@ -72,6 +79,12 @@ class WeeklySchedule:
         '''Add a new event to this schedule.'''
         self.events[weekday] = event
 
+    def getCivilTwilight(self, event_date: date = None) -> datetime:
+        '''Return the start of civil sunset on a given date.
+        Defaults to today's date if not given.'''
+        twilight_start_end = twilight(self.observer, event_date, SunDirection.SETTING, self.tzinfo)
+        return twilight_start_end[0]
+
     def getEventType(self, event_date: date) -> Optional[int]:
         '''Return the type of event for manually programming an Intermatic astronomical time clock.
         The event type primarily depends on whether a sunset occurs during the event.
@@ -80,7 +93,7 @@ class WeeklySchedule:
         if event is None:
             return None
         result = EVT_SUNSET
-        sunset_time = self.observer.getCivilTwilight(event_date).time()
+        sunset_time = self.getCivilTwilight(event_date).time()
         if event.start > sunset_time:
             result = EVT_FIXED
         elif sunset_time > event.stop:
@@ -113,7 +126,7 @@ class WeeklySchedule:
                     calendar_date - timedelta(days=7))
                 if curr_event_type != prev_week_event_type:
                     event_type_changed = True
-            data[calendar_date] = (self.observer.getCivilTwilight(calendar_date),
+            data[calendar_date] = (self.getCivilTwilight(calendar_date),
                                    curr_event_type,
                                    event_type_changed)
             calendar_date += timedelta(days=1)
@@ -136,38 +149,11 @@ class WeeklySchedule:
         return data
 
 
-class ScheduleObserver(Observer):
-    '''Schedule implementation of astral.Observer to aggregate timezone'''
-
-    def __init__(self, tzinfo: pytz.tzinfo = pytz.utc, **kwargs) -> None:
-        '''Create an observer in a given time zone.'''
-        self.tzinfo = tzinfo
-        super().__init__(**kwargs)
-
-    def __str__(self):
-        if isinstance(self.elevation, tuple):
-            elevation_str = (f'elevation {self.elevation[0]:.0f} m'
-                             f', {self.elevation[1]:.0f} m to nearest obscuring feature')
-        else:
-            elevation_str = f'elevation {self.elevation:.0f} m'
-        result = (f'ScheduleObserver at '
-                  f'({self.latitude},{self.longitude})'
-                  f', {elevation_str}')
-        return result
-
-    def getCivilTwilight(self, event_date: date = None) -> datetime:
-        '''Return the start of civil sunset on a given date.
-        Defaults to today's date if not given.'''
-        twilight_start_end = twilight(self, event_date, SunDirection.SETTING, self.tzinfo)
-        return twilight_start_end[0]
-
-
 def getCurrentSchedule() -> WeeklySchedule:
     '''Current HoP weekly schedule.'''
     # Observer at HoP: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
     # Note: elevation (in meters) is just a guess based on ROC airport. We may adjust it.
-    hop_observer = ScheduleObserver(latitude=43.1606355, longitude=-77.3883843, elevation=170,
-                                    tzinfo=pytz.timezone("US/Eastern"))
+    hop_observer = Observer(latitude=43.1606355, longitude=-77.3883843, elevation=170)
     result = WeeklySchedule(hop_observer)
     result.addEvent(calendar.SUNDAY, ScheduleEvent(time(16, 45), time(19, 0)))
     result.addEvent(calendar.TUESDAY, ScheduleEvent(time(18, 30), time(22, 0)))
