@@ -54,7 +54,6 @@ setup(
         'astral>=2.1',
         'pytz>=2019.3',
         'reportlab>=3.5.42',
-        'timezonefinder>=4.3.1',
     ],
     project_urls={
         'Documentation': '',
