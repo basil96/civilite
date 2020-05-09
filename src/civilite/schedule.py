@@ -11,7 +11,6 @@ from typing import Dict, Optional, Tuple
 import pytz
 from astral import Observer, SunDirection
 from astral.sun import twilight
-from timezonefinder import TimezoneFinder
 
 # self
 import civilite._meta as meta
@@ -51,14 +50,18 @@ class ScheduleEvent:
 class WeeklySchedule:
     '''A collection of events that repeat every week.'''
 
-    def __init__(self, observer: Observer, tzinfo: pytz.tzinfo = None) -> None:
+    def __init__(self, observer: Observer, tzinfo: pytz.tzinfo = pytz.utc) -> None:
+        '''Create a new weekly schedule.
+
+        Args:
+            observer: An ``astral.Observer`` instance for a desired location.
+            tzinfo:   Timezone in which to return times. If `None` is given,
+                        the caller's local system timezone will be used.
+                      The default is UTC.
+        '''
         # The Observer associated with this schedule.
         self.observer = observer
-        if tzinfo is None:
-            # Use the timezone at the observer's location
-            tzf = TimezoneFinder()
-            self.tzinfo = pytz.timezone(tzf.timezone_at(
-                lat=observer.latitude, lng=observer.longitude))
+        # The timezone in which to return times.
         self.tzinfo = tzinfo
         # The collection of events that occur every week. Key: weekday (int), value: ScheduleEvent instance.
         self.events = {}
@@ -81,7 +84,7 @@ class WeeklySchedule:
 
     def getCivilTwilight(self, event_date: date = None) -> datetime:
         '''Return the start of civil sunset on a given date.
-        Defaults to today's date if not given.'''
+        Default is today's date in the timezone ``WeeklySchedule.tzinfo``.'''
         twilight_start_end = twilight(self.observer, event_date, SunDirection.SETTING, self.tzinfo)
         return twilight_start_end[0]
 
