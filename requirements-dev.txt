@@ -1,2 +1,2 @@
-autopep8==1.5.2
-rope==0.16.0
+autopep8>=1.5.2
+rope>=0.16.0

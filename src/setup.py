@@ -14,7 +14,8 @@ Install a link for development work (from ./src directory)
 
 import os
 from importlib.util import module_from_spec, spec_from_file_location
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 SPEC = spec_from_file_location("meta", "./civilite/_meta.py")
 METADATA = module_from_spec(SPEC)
@@ -33,13 +34,11 @@ except IOError:
     README = ''
 
 
-
-
 setup(
     name='civilite',
     packages=find_packages(
         exclude=["*.tests", "test_.*", "tests"]
-        ),
+    ),
     package_dir={},
     # metadata
     version=__version__,
@@ -52,9 +51,10 @@ setup(
     license=__license__,
     python_requires=">=3.6, ",
     install_requires=[
-        'astral==2.1',
-        'pytz==2019.3',
-        'reportlab==3.5.42',
+        'astral>=2.1',
+        'pytz>=2019.3',
+        'reportlab>=3.5.42',
+        'timezonefinder>=4.3.1',
     ],
     project_urls={
         'Documentation': '',
