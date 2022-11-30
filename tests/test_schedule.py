@@ -84,4 +84,4 @@ class TestSchedule:
             # print(f'  expected sunset: {expected_sunset}')
             # print(f'calculated sunset: {sunset_time}')
             # print(f'             diff: {abs_sunset_diff}')
-            assert abs_sunset_diff.total_seconds() < 120.0, f'Unexpected sunset time on {evt_date}'
+            assert abs_sunset_diff.total_seconds() < 180.0, f'Unexpected sunset time on {evt_date}'

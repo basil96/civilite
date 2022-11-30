@@ -157,7 +157,7 @@ def getCurrentSchedule() -> WeeklySchedule:
     # Observer at HoP: Rochester_HoP,USA,43°09'N,77°23'W,US/Eastern,170
     # Note: elevation (in meters) is just a guess based on ROC airport. We may adjust it.
     hop_observer = Observer(latitude=43.1606355, longitude=-77.3883843, elevation=170)
-    result = WeeklySchedule(hop_observer)
+    result = WeeklySchedule(hop_observer, tzinfo=pytz.timezone('US/Eastern'))
     result.addEvent(calendar.SUNDAY, ScheduleEvent(time(16, 45), time(19, 0)))
     result.addEvent(calendar.TUESDAY, ScheduleEvent(time(18, 30), time(22, 0)))
     result.addEvent(calendar.WEDNESDAY, ScheduleEvent(time(18, 45), time(21, 0)))
